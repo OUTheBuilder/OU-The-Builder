@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -65,8 +65,8 @@ jobs:
 
           "$SDKMANAGER" \
             "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+            "platforms;android-36" \
+            "build-tools;36.0.0"
 
       - name: Verify Android SDK
         shell: bash
@@ -88,13 +88,13 @@ jobs:
           echo "Installed Android SDK packages:"
           "$SDKMANAGER" --list | sed -n '/Installed packages:/,/Available Packages:/p'
 
-          if [[ ! -d "$SDK_ROOT/platforms/android-35" ]]; then
-            echo "ERROR: Android platform 35 was not installed."
+          if [[ ! -d "$SDK_ROOT/platforms/android-36" ]]; then
+            echo "ERROR: Android platform 36 was not installed."
             exit 1
           fi
 
-          if [[ ! -d "$SDK_ROOT/build-tools/35.0.0" ]]; then
-            echo "ERROR: Android Build Tools 35.0.0 were not installed."
+          if [[ ! -d "$SDK_ROOT/build-tools/36.0.0" ]]; then
+            echo "ERROR: Android Build Tools 36.0.0 were not installed."
             exit 1
           fi
 
