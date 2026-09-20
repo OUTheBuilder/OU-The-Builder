@@ -1,29 +1,55 @@
-name: Diagnose OU The Builder
+name: Build OU The Builder APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
-  diagnose:
+  build:
+    name: Build Android APK
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: OU_The_Builder_Foundation
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
 
-      - name: Show repository structure
-        run: |
-          echo "=== Repository root ==="
-          pwd
-          echo ""
-          echo "=== Files and folders ==="
-          find . -maxdepth 4 -type f | sort
-          echo ""
-          echo "=== Gradle wrappers found ==="
-          find . -name "gradlew" -o -name "gradlew.bat" | sort
-          echo ""
-          echo "=== settings.gradle files ==="
-          find . -name "settings.gradle" -o -name "settings.gradle.kts" | sort
-          echo ""
-          echo "=== build.gradle files ==="
-          find . -name "build.gradle" -o -name "build.gradle.kts" | sort
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 9.0.0 --distribution-type bin
+
+      - name: Make Gradle executable
+        run: chmod +x ./gradlew
+
+      - name: Check Gradle
+        run: ./gradlew --version
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OU-The-Builder-debug
+          path: OU_The_Builder_Foundation/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
