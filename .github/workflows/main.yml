@@ -23,18 +23,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Show project structure
+      - name: Inspect project
         run: |
+          echo "===== CURRENT DIRECTORY ====="
           pwd
-          echo "Repository:"
-          find . -maxdepth 3 -type f | sort | head -200
 
-      - name: Build Debug APK
-        working-directory: OU_The_Builder_Foundation
-        run: |
-          chmod +x gradlew
-          ./gradlew clean assembleDebug --stacktrace
+          echo "===== TOP LEVEL ====="
+          ls -la
 
+          echo "===== PROJECT FILES ====="
+          find . -maxdepth 4 -type f | sort
+
+          echo "===== GRADLE WRAPPERS ====="
+          find . -name "gradlew" -type
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
