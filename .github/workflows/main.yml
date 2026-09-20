@@ -17,33 +17,45 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.1.1'
+          gradle-version: '9.1.0'
 
       - name: Generate Gradle Wrapper
         working-directory: OU_The_Builder_Foundation
         run: |
           set -e
 
-          gradle wrapper --gradle-version 9.1.1
+          echo "======================================"
+          echo " GENERATING GRADLE WRAPPER"
+          echo "======================================"
 
-          echo "=== WRAPPER GENERATED ==="
+          gradle wrapper --gradle-version 9.1.0
 
-          ls -la
-          ls -la gradle/wrapper
+          echo ""
+          echo "Checking generated files..."
 
           test -f gradlew
+          test -f gradlew.bat
           test -f gradle/wrapper/gradle-wrapper.jar
+          test -f gradle/wrapper/gradle-wrapper.properties
 
-          echo "Gradle wrapper is complete."
+          echo ""
+          echo "======================================"
+          echo " GRADLE WRAPPER CREATED"
+          echo "======================================"
 
-      - name: Upload generated wrapper
+          ls -lh gradlew
+          ls -lh gradlew.bat
+          ls -lh gradle/wrapper/
+
+      - name: Upload Gradle Wrapper
         uses: actions/upload-artifact@v4
         with:
           name: gradle-wrapper
           path: |
             OU_The_Builder_Foundation/gradlew
             OU_The_Builder_Foundation/gradlew.bat
-            OU_The_Builder_Foundation/gradle/wrapper/
+            OU_The_Builder_Foundation/gradle/wrapper/gradle-wrapper.jar
+            OU_The_Builder_Foundation/gradle/wrapper/gradle-wrapper.properties
