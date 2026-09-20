@@ -5,12 +5,14 @@ plugins {
 
 android {
     namespace = "com.oubuilder"
-    compileSdk = 35
+
+    // The GitHub Actions workflow installs Android SDK 36.
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.oubuilder"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
     }
