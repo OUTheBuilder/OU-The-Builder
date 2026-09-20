@@ -20,16 +20,24 @@ jobs:
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.0'
+          gradle-version: '9.1.1'
 
       - name: Generate Gradle Wrapper
         working-directory: OU_The_Builder_Foundation
         run: |
-          gradle wrapper --gradle-version 9.0
+          set -e
 
-          echo "=== GENERATED FILES ==="
+          gradle wrapper --gradle-version 9.1.1
+
+          echo "=== WRAPPER GENERATED ==="
+
           ls -la
           ls -la gradle/wrapper
+
+          test -f gradlew
+          test -f gradle/wrapper/gradle-wrapper.jar
+
+          echo "Gradle wrapper is complete."
 
       - name: Upload generated wrapper
         uses: actions/upload-artifact@v4
