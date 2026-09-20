@@ -75,6 +75,20 @@ jobs:
 
           echo "Android project files found."
 
+      - name: Ensure Gradle wrapper exists
+        working-directory: OU_The_Builder_Foundation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f gradlew ]; then
+            echo "ERROR: gradlew is missing. Generate and commit the Gradle wrapper first."
+            exit 1
+          fi
+
+          chmod +x gradlew
+          ./gradlew --version
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -83,20 +97,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          ./gradlew clean \
-            --stacktrace \
-            --no-daemon
+          ./gradlew clean --stacktrace --no-daemon
 
       - name: Build APK
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
           set -euo pipefail
-
-          ./gradlew assembleDebug \
-            --stacktrace \
-            --no-daemon
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Verify APK
         working-directory: OU_The_Builder_Foundation
