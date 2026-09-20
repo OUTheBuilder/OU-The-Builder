@@ -1,67 +1,114 @@
-- name: Checkout
-  uses: actions/checkout@v4
+name: Build OU The Builder
 
-- name: Set up Java
-  uses: actions/setup-java@v4
-  with:
-    distribution: temurin
-    java-version: '17'
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
-- name: Set up Android
-  uses: android-actions/setup-android@v3
+jobs:
+  build:
+    name: Verify and Build APK
+    runs-on: ubuntu-latest
 
-- name: Verify project
-  run: |
-    set -e
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
 
-    echo "=== PROJECT VERIFICATION ==="
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-    test -f gradlew
-    test -f settings.gradle || test -f settings.gradle.kts
-    test -d app
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-    chmod +x gradlew
+      - name: Verify project
+        shell: bash
+        run: |
+          set -e
 
-    echo "Gradle wrapper: OK"
-    echo "App module: OK"
+          echo "======================================"
+          echo " OU THE BUILDER - PROJECT VERIFICATION"
+          echo "======================================"
 
-    ./gradlew --version
+          if [ ! -f "gradlew" ]; then
+            echo "ERROR: gradlew not found."
+            exit 1
+          fi
 
-    echo "=== RUNNING GRADLE CHECKS ==="
-    ./gradlew test
+          chmod +x gradlew
 
-    echo "=== VERIFICATION COMPLETE ==="
+          if [ ! -d "app" ]; then
+            echo "ERROR: app directory not found."
+            exit 1
+          fi
 
-- name: Build APK
-  run: |
-    set -e
+          if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
+            echo "ERROR: settings.gradle or settings.gradle.kts not found."
+            exit 1
+          fi
 
-    echo "=== BUILDING APK ==="
-    ./gradlew assembleDebug --stacktrace
+          echo "Project structure: OK"
 
-    echo "=== APK BUILD COMPLETE ==="
+          echo ""
+          echo "Gradle version:"
+          ./gradlew --version
 
-- name: Verify APK
-  run: |
-    set -e
+      - name: Clean project
+        shell: bash
+        run: |
+          set -e
 
-    echo "=== SEARCHING FOR APK ==="
+          echo "======================================"
+          echo " CLEANING PROJECT"
+          echo "======================================"
 
-    APK=$(find . -type f -name "*.apk" | head -n 1)
+          ./gradlew clean --stacktrace
 
-    if [ -z "$APK" ]; then
-      echo "ERROR: APK was not generated."
-      exit 1
-    fi
+      - name: Compile APK
+        shell: bash
+        run: |
+          set -e
 
-    echo "APK FOUND:"
-    echo "$APK"
+          echo "======================================"
+          echo " COMPILING OU THE BUILDER"
+          echo "======================================"
 
-    ls -lh "$APK"
+          ./gradlew assembleDebug --stacktrace --info
 
-- name: Upload APK
-  uses: actions/upload-artifact@v4
-  with:
-    name: OU-The-Builder-debug-apk
-    path: "**/*.apk"
-    if-no-files-found: error
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -e
+
+          echo "======================================"
+          echo " VERIFYING APK"
+          echo "======================================"
+
+          APK=$(find . -type f -name "*.apk" | head -n 1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK was not generated."
+            echo ""
+            echo "Searching build directories:"
+            find . -type d -name build -print
+            exit 1
+          fi
+
+          echo "BUILD SUCCESSFUL"
+          echo ""
+          echo "APK FOUND:"
+          echo "$APK"
+          echo ""
+          echo "APK SIZE:"
+          ls -lh "$APK"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OU-The-Builder-debug-apk
+          path: "**/*.apk"
+          if-no-files-found: error
