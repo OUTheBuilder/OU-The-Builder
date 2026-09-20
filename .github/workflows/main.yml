@@ -23,21 +23,81 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Inspect project
+      - name: Inspect repository
         run: |
-          echo "===== CURRENT DIRECTORY ====="
+          echo "===== ROOT ====="
           pwd
+          echo
 
-          echo "===== TOP LEVEL ====="
-          ls -la
+          echo "===== DIRECTORY TREE ====="
+          find . -maxdepth 5 -print | sort
+          echo
 
-          echo "===== PROJECT FILES ====="
-          find . -maxdepth 4 -type f | sort
+          echo "===== GRADLE FILES ====="
+          find . \( \
+            -name "gradlew" -o \
+            -name "gradlew.bat" -o \
+            -name "settings.gradle" -o \
+            -name "settings.gradle.kts" -o \
+            -name "build.gradle" -o \
+            -name "build.gradle.kts" \
+          \) -print
 
-          echo "===== GRADLE WRAPPERS ====="
-          find . -name "gradlew" -type
+      - name: Build
+        shell: bash
+        run: |
+          set -e
+
+          echo "Searching for Gradle project..."
+
+          PROJECT_DIR=""
+
+          for dir in \
+            "." \
+            "./OU_The_Builder_Foundation" \
+            "./OU-The-Builder" \
+            "./app"
+          do
+            if [ -f "$dir/gradlew" ]; then
+              PROJECT_DIR="$dir"
+              break
+            fi
+          done
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo
+            echo "ERROR: gradlew was not found."
+            echo
+            echo "Available files:"
+            find . -maxdepth 5 -type f | sort
+            echo
+            exit 1
+          fi
+
+          echo "Gradle project found at:"
+          echo "$PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
+
+          chmod +x gradlew
+
+          echo
+          echo "===== GRADLE VERSION ====="
+          ./gradlew --version
+
+          echo
+          echo "===== BUILDING APK ====="
+          ./gradlew clean assembleDebug --stacktrace
+
+      - name: Find APK
+        if: success()
+        run: |
+          echo "===== APK FILES ====="
+          find . -type f -name "*.apk" -print
+
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: OU-The-Builder-debug
-          path: OU_The_Builder_Foundation/app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
