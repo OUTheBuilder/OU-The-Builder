@@ -1,36 +1,67 @@
-name: Build OU The Builder
+- name: Checkout
+  uses: actions/checkout@v4
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+- name: Set up Java
+  uses: actions/setup-java@v4
+  with:
+    distribution: temurin
+    java-version: '17'
 
-jobs:
-  build:
-    runs-on: ubuntu-24.04
+- name: Set up Android
+  uses: android-actions/setup-android@v3
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+- name: Verify project
+  run: |
+    set -e
 
-      - name: Set up JDK
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
+    echo "=== PROJECT VERIFICATION ==="
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+    test -f gradlew
+    test -f settings.gradle || test -f settings.gradle.kts
+    test -d app
 
-      - name: Grant Gradle execute permission
-        run: chmod +x gradlew
+    chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+    echo "Gradle wrapper: OK"
+    echo "App module: OK"
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: OU-The-Builder-debug
-          path: '**/build/outputs/apk/debug/*.apk'
+    ./gradlew --version
+
+    echo "=== RUNNING GRADLE CHECKS ==="
+    ./gradlew test
+
+    echo "=== VERIFICATION COMPLETE ==="
+
+- name: Build APK
+  run: |
+    set -e
+
+    echo "=== BUILDING APK ==="
+    ./gradlew assembleDebug --stacktrace
+
+    echo "=== APK BUILD COMPLETE ==="
+
+- name: Verify APK
+  run: |
+    set -e
+
+    echo "=== SEARCHING FOR APK ==="
+
+    APK=$(find . -type f -name "*.apk" | head -n 1)
+
+    if [ -z "$APK" ]; then
+      echo "ERROR: APK was not generated."
+      exit 1
+    fi
+
+    echo "APK FOUND:"
+    echo "$APK"
+
+    ls -lh "$APK"
+
+- name: Upload APK
+  uses: actions/upload-artifact@v4
+  with:
+    name: OU-The-Builder-debug-apk
+    path: "**/*.apk"
+    if-no-files-found: error
