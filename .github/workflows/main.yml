@@ -29,40 +29,107 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
+      - name: Diagnose Android SDK
+        working-directory: .
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+
+          if [ -z "$SDK_ROOT" ]; then
+            echo "ERROR: Android SDK root was not found."
+            exit 1
+          fi
+
+          echo "SDK_ROOT=$SDK_ROOT"
+
+          sdkmanager --sdk_root="$SDK_ROOT" --version
+
       - name: Install Android SDK packages
         working-directory: .
         shell: bash
         run: |
-          set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
+          set -euxo pipefail
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+
+          if [ -z "$SDK_ROOT" ]; then
+            echo "ERROR: Android SDK root was not found."
+            exit 1
+          fi
+
+          echo "Accepting Android SDK licenses..."
+
+          yes | sdkmanager \
+            --sdk_root="$SDK_ROOT" \
+            --licenses || true
+
+          echo "Installing Android SDK packages..."
+
+          sdkmanager \
+            --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+          echo "Android SDK installation complete."
+
+      - name: Verify Android SDK
+        working-directory: .
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+
+          sdkmanager \
+            --sdk_root="$SDK_ROOT" \
+            --list_installed
 
       - name: Verify project
         run: |
-          set -euo pipefail
+          set -euxo pipefail
+
+          echo "Checking project..."
+
           test -f gradlew
           test -f settings.gradle.kts
           test -f build.gradle.kts
           test -f app/build.gradle.kts
           test -d app/src
+
           chmod +x gradlew
+
+          echo "Project verification successful."
           ./gradlew --version
 
       - name: Clean project
         run: |
-          set -euo pipefail
-          ./gradlew clean --stacktrace --no-daemon
+          set -euxo pipefail
+
+          ./gradlew clean \
+            --stacktrace \
+            --info \
+            --no-daemon
 
       - name: Build APK
         run: |
-          set -euo pipefail
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          set -euxo pipefail
+
+          ./gradlew assembleDebug \
+            --stacktrace \
+            --info \
+            --no-daemon
 
       - name: Verify APK
         run: |
-          set -euo pipefail
+          set -euxo pipefail
+
+          echo "Searching for generated APK..."
 
           APK=$(find app/build/outputs/apk \
             -type f \
@@ -74,8 +141,15 @@ jobs:
             exit 1
           fi
 
+          echo ""
+          echo "========================================"
           echo "APK BUILD SUCCESSFUL"
-          echo "APK: $APK"
+          echo "========================================"
+          echo ""
+          echo "APK:"
+          echo "$APK"
+          echo ""
+
           ls -lh "$APK"
 
       - name: Upload APK
@@ -87,5 +161,8 @@ jobs:
 
       - name: Build complete
         run: |
+          echo ""
+          echo "========================================"
           echo "OU THE BUILDER BUILD COMPLETE"
-          echo "The APK has been uploaded as an artifact."
+          echo "========================================"
+          echo "APK uploaded successfully."
