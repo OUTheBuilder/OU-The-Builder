@@ -1,4 +1,4 @@
-name: Buiild OU The Builder
+name: Build OU The Builder
 
 on:
   push:
