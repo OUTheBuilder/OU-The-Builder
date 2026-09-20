@@ -17,77 +17,52 @@ jobs:
         working-directory: OU_The_Builder_Foundation
 
     steps:
-      # 1. Checkout the repository
       - name: Checkout project
         uses: actions/checkout@v5
 
-      # 2. Set up Java 17
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Set up Android SDK
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      # 4. Install the Android SDK required by the project
       - name: Install Android SDK packages
         working-directory: .
         shell: bash
         run: |
           set -euo pipefail
-
           yes | sdkmanager --licenses >/dev/null || true
-
           sdkmanager "platform-tools"
           sdkmanager "platforms;android-35"
           sdkmanager "build-tools;35.0.0"
 
-      # 5. Verify the Android project
       - name: Verify project
         run: |
           set -euo pipefail
-
-          echo "Checking project..."
-
           test -f gradlew
           test -f settings.gradle.kts
           test -f build.gradle.kts
           test -f app/build.gradle.kts
           test -d app/src
-
           chmod +x gradlew
-
-          echo "Project verification successful."
-          echo ""
           ./gradlew --version
 
-      # 6. Clean the project
       - name: Clean project
         run: |
           set -euo pipefail
+          ./gradlew clean --stacktrace --no-daemon
 
-          ./gradlew clean \
-            --stacktrace \
-            --no-daemon
-
-      # 7. Build the Debug APK
       - name: Build APK
         run: |
           set -euo pipefail
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
-          ./gradlew assembleDebug \
-            --stacktrace \
-            --no-daemon
-
-      # 8. Verify that an APK was generated
       - name: Verify APK
         run: |
           set -euo pipefail
-
-          echo "Searching for APK..."
 
           APK=$(find app/build/outputs/apk \
             -type f \
@@ -99,18 +74,10 @@ jobs:
             exit 1
           fi
 
-          echo ""
-          echo "========================================"
           echo "APK BUILD SUCCESSFUL"
-          echo "========================================"
-          echo ""
-          echo "Generated APK:"
-          echo "$APK"
-          echo ""
-
+          echo "APK: $APK"
           ls -lh "$APK"
 
-      # 9. Upload the APK to GitHub Actions
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
@@ -118,5 +85,7 @@ jobs:
           path: OU_The_Builder_Foundation/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
 
-      # 10. Final confirmation
-      - name: Build
+      - name: Build complete
+        run: |
+          echo "OU THE BUILDER BUILD COMPLETE"
+          echo "The APK has been uploaded as an artifact."
