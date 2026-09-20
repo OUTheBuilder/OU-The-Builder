@@ -1,103 +1,127 @@
-name: Build Android APK
+name: Diagnose Android Project
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  build:
+  diagnose:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Inspect repository
-        run: |
-          echo "===== ROOT ====="
-          pwd
-          echo
-
-          echo "===== DIRECTORY TREE ====="
-          find . -maxdepth 5 -print | sort
-          echo
-
-          echo "===== GRADLE FILES ====="
-          find . \( \
-            -name "gradlew" -o \
-            -name "gradlew.bat" -o \
-            -name "settings.gradle" -o \
-            -name "settings.gradle.kts" -o \
-            -name "build.gradle" -o \
-            -name "build.gradle.kts" \
-          \) -print
-
-      - name: Build
+      - name: Full project diagnostic
         shell: bash
         run: |
-          set -e
+          set +e
 
-          echo "Searching for Gradle project..."
+          echo "=================================================="
+          echo "OU THE BUILDER - ANDROID PROJECT DIAGNOSTIC"
+          echo "=================================================="
 
-          PROJECT_DIR=""
+          echo
+          echo "===== 1. SYSTEM ====="
+          uname -a
+          echo
+          java -version
+          echo
+          git --version
 
-          for dir in \
-            "." \
-            "./OU_The_Builder_Foundation" \
-            "./OU-The-Builder" \
-            "./app"
+          echo
+          echo "===== 2. REPOSITORY ROOT ====="
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          pwd
+          ls -la
+
+          echo
+          echo "===== 3. COMPLETE PROJECT TREE ====="
+          find "$GITHUB_WORKSPACE" -maxdepth 6 -print | sort
+
+          echo
+          echo "===== 4. GRADLE WRAPPERS ====="
+          find "$GITHUB_WORKSPACE" \
+            -type f \
+            -name "gradlew" -o -name "gradlew.bat" \
+            -print
+
+          echo
+          echo "===== 5. GRADLE CONFIGURATION FILES ====="
+          find "$GITHUB_WORKSPACE" \
+            -type f \
+            \
+              -name "settings.gradle" \
+              -o -name "settings.gradle.kts" \
+              -o -name "build.gradle" \
+              -o -name "build.gradle.kts" \
+              -o -name "gradle.properties" \
+              -o -name "gradle-wrapper.properties" \
+            \
+            -print
+
+          echo
+          echo "===== 6. ANDROID MANIFESTS ====="
+          find "$GITHUB_WORKSPACE" \
+            -type f \
+            -name "AndroidManifest.xml" \
+            -print
+
+          echo
+          echo "===== 7. KOTLIN / JAVA SOURCE ====="
+          find "$GITHUB_WORKSPACE" \
+            -type f \
+            -name "*.kt" -o -name "*.java" \
+            -print | head -200
+
+          echo
+          echo "===== 8. ROOT SETTINGS FILE ====="
+
+          for FILE in \
+            "$GITHUB_WORKSPACE/settings.gradle" \
+            "$GITHUB_WORKSPACE/settings.gradle.kts"
           do
-            if [ -f "$dir/gradlew" ]; then
-              PROJECT_DIR="$dir"
-              break
+            if [ -f "$FILE" ]; then
+              echo "----- $FILE -----"
+              cat "$FILE"
             fi
           done
 
-          if [ -z "$PROJECT_DIR" ]; then
-            echo
-            echo "ERROR: gradlew was not found."
-            echo
-            echo "Available files:"
-            find . -maxdepth 5 -type f | sort
-            echo
-            exit 1
-          fi
+          echo
+          echo "===== 9. ALL BUILD GRADLE FILES ====="
 
-          echo "Gradle project found at:"
-          echo "$PROJECT_DIR"
-
-          cd "$PROJECT_DIR"
-
-          chmod +x gradlew
+          while IFS= read -r FILE; do
+            echo
+            echo "----- $FILE -----"
+            cat "$FILE"
+          done < <(
+            find "$GITHUB_WORKSPACE" \
+              -type f \
+              -name "build.gradle" -o -name "build.gradle.kts" \
+              -print
+          )
 
           echo
-          echo "===== GRADLE VERSION ====="
-          ./gradlew --version
+          echo "===== 10. GRADLE PROPERTIES ====="
+
+          while IFS= read -r FILE; do
+            echo
+            echo "----- $FILE -----"
+            cat "$FILE"
+          done < <(
+            find "$GITHUB_WORKSPACE" \
+              -type f \
+              -name "gradle.properties" \
+              -print
+          )
 
           echo
-          echo "===== BUILDING APK ====="
-          ./gradlew clean assembleDebug --stacktrace
-
-      - name: Find APK
-        if: success()
-        run: |
-          echo "===== APK FILES ====="
-          find . -type f -name "*.apk" -print
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: OU-The-Builder-debug
-          path: "**/build/outputs/apk/debug/*.apk"
+          echo "===== 11. GRADLE WRAPPER PROPERTIES
