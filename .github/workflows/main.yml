@@ -1,69 +1,36 @@
-name: Inspect OU The Builder
+name: Build OU The Builder
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  inspect:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-      - name: Inspect files
-        shell: bash
-        run: |
-          echo "===== ROOT ====="
-          pwd
-          echo
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
 
-          echo "===== TOP LEVEL ====="
-          ls -la
-          echo
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-          echo "===== ALL TRACKED FILES ====="
-          git ls-files
-          echo
+      - name: Grant Gradle execute permission
+        run: chmod +x gradlew
 
-          echo "===== GRADLE FILES ====="
-          git ls-files | grep -E '(^|/)(gradlew|gradlew.bat|build.gradle|build.gradle.kts|settings.gradle|settings.gradle.kts|gradle.properties|gradle-wrapper.properties)$' || true
-          echo
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
 
-          echo "===== ACTUAL GRADLE FILES ON DISK ====="
-          find . -type f \( \
-            -name 'gradlew' -o \
-            -name 'gradlew.bat' -o \
-            -name 'build.gradle' -o \
-            -name 'build.gradle.kts' -o \
-            -name 'settings.gradle' -o \
-            -name 'settings.gradle.kts' -o \
-            -name 'gradle.properties' -o \
-            -name 'gradle-wrapper.properties' \
-          \) -print
-          echo
-
-          echo "===== ANDROID PROJECT ====="
-          find . -type f -name 'AndroidManifest.xml' -print
-          echo
-
-          echo "===== FOUNDATION DIRECTORY ====="
-          if [ -d "./OU_The_Builder_Foundation" ]; then
-            ls -la "./OU_The_Builder_Foundation"
-          else
-            echo "OU_The_Builder_Foundation DOES NOT EXIST"
-          fi
-          echo
-
-          echo "===== APP DIRECTORY ====="
-          if [ -d "./OU_The_Builder_Foundation/app" ]; then
-            find "./OU_The_Builder_Foundation/app" -maxdepth 4 -print
-          else
-            echo "APP DIRECTORY DOES NOT EXIST"
-          fi
-          echo
-
-          echo "===== DONE ====="
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OU-The-Builder-debug
+          path: '**/build/outputs/apk/debug/*.apk'
