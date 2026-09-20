@@ -1,4 +1,4 @@
-name: Build OU The Builder APK
+name: Builld OU The Builder APK
 
 on:
   workflow_dispatch:
