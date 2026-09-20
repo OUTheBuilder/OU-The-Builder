@@ -1,168 +1,41 @@
-name: Build OU The Builder
+name: Prepare Gradle Wrapper
 
 on:
-  push:
-    branches:
-      - main
-      - master
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Verify and Build APK
+  prepare:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
-      - name: Checkout project
+      - name: Checkout
         uses: actions/checkout@v5
 
-      # 2. Java
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Android SDK
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.0'
 
-      # 4. Verify project
-      - name: Verify project
-        shell: bash
+      - name: Generate Gradle Wrapper
+        working-directory: OU_The_Builder_Foundation
         run: |
-          set -e
+          gradle wrapper --gradle-version 9.0
 
-          echo "======================================"
-          echo " OU THE BUILDER"
-          echo " PROJECT VERIFICATION"
-          echo "======================================"
+          echo "=== GENERATED FILES ==="
+          ls -la
+          ls -la gradle/wrapper
 
-          echo ""
-          echo "[1] Checking Gradle wrapper..."
-
-          if [ ! -f "gradlew" ]; then
-            echo "ERROR: gradlew was not found."
-            exit 1
-          fi
-
-          chmod +x gradlew
-
-          echo "Gradle wrapper: OK"
-
-          echo ""
-          echo "[2] Checking Android project..."
-
-          if [ ! -d "app" ]; then
-            echo "ERROR: app directory was not found."
-            exit 1
-          fi
-
-          echo "app module: OK"
-
-          echo ""
-          echo "[3] Checking settings..."
-
-          if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
-            echo "ERROR: settings.gradle or settings.gradle.kts was not found."
-            exit 1
-          fi
-
-          echo "Gradle settings: OK"
-
-          echo ""
-          echo "[4] Checking Gradle..."
-
-          ./gradlew --version
-
-          echo ""
-          echo "======================================"
-          echo " PROJECT VERIFICATION PASSED"
-          echo "======================================"
-
-      # 5. Clean
-      - name: Clean project
-        shell: bash
-        run: |
-          set -e
-
-          echo "======================================"
-          echo " CLEANING PROJECT"
-          echo "======================================"
-
-          ./gradlew clean --stacktrace
-
-          echo ""
-          echo "CLEAN PASSED"
-
-      # 6. Compile APK
-      - name: Compile APK
-        shell: bash
-        run: |
-          set -e
-
-          echo "======================================"
-          echo " COMPILING OU THE BUILDER"
-          echo "======================================"
-
-          ./gradlew assembleDebug --stacktrace
-
-          echo ""
-          echo "======================================"
-          echo " GRADLE BUILD PASSED"
-          echo "======================================"
-
-      # 7. Verify APK
-      - name: Verify APK
-        shell: bash
-        run: |
-          set -e
-
-          echo "======================================"
-          echo " VERIFYING GENERATED APK"
-          echo "======================================"
-
-          APK=$(find . -type f -name "*.apk" | head -n 1)
-
-          if [ -z "$APK" ]; then
-            echo ""
-            echo "ERROR: No APK was generated."
-            echo ""
-            echo "APK search results:"
-            find . -type f -name "*.apk" -print
-            exit 1
-          fi
-
-          echo ""
-          echo "APK FOUND:"
-          echo "$APK"
-
-          echo ""
-          echo "APK SIZE:"
-          ls -lh "$APK"
-
-          echo ""
-          echo "======================================"
-          echo " APK VERIFICATION PASSED"
-          echo "======================================"
-
-      # 8. Upload APK
-      - name: Upload APK
+      - name: Upload generated wrapper
         uses: actions/upload-artifact@v4
         with:
-          name: OU-The-Builder-debug-apk
-          path: "**/*.apk"
-          if-no-files-found: error
-
-      # 9. Final result
-      - name: Build complete
-        shell: bash
-        run: |
-          echo "======================================"
-          echo " OU THE BUILDER"
-          echo " BUILD SUCCESSFUL"
-          echo "======================================"
-          echo ""
-          echo "The APK was successfully compiled."
-          echo "The APK has been uploaded as a GitHub Actions artifact."
+          name: gradle-wrapper
+          path: |
+            OU_The_Builder_Foundation/gradlew
+            OU_The_Builder_Foundation/gradlew.bat
+            OU_The_Builder_Foundation/gradle/wrapper/
