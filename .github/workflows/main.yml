@@ -140,6 +140,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew clean \
             --stacktrace \
+            --info \
             --no-daemon
 
       - name: Build APK
@@ -149,8 +150,9 @@ jobs:
           set -Eeuo pipefail
 
           chmod +x ./gradlew
-          ./gradlew assembleDebug \
+          ./gradlew :app:assembleDebug \
             --stacktrace \
+            --info \
             --no-daemon
 
       - name: Verify APK
