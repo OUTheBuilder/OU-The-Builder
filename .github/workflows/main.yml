@@ -28,12 +28,12 @@ jobs:
       - name: Configure Android SDK
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
 
-          if [ ! -d "$SDK_ROOT" ]; then
-            echo "Android SDK was not found at: $SDK_ROOT"
+          if [[ ! -d "$SDK_ROOT" ]]; then
+            echo "ERROR: Android SDK was not found at: $SDK_ROOT"
             exit 1
           fi
 
@@ -47,11 +47,23 @@ jobs:
       - name: Install Android SDK packages
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
-          yes | sdkmanager --licenses >/dev/null || true
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
 
-          sdkmanager \
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(command -v sdkmanager || true)"
+          fi
+
+          if [[ -z "$SDKMANAGER" ]]; then
+            echo "ERROR: sdkmanager was not found."
+            exit 1
+          fi
+
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+
+          "$SDKMANAGER" \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
@@ -59,14 +71,40 @@ jobs:
       - name: Verify Android SDK
         shell: bash
         run: |
-          set -euo pipefail
-          sdkmanager --list_installed
+          set -Eeuo pipefail
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+
+          if [[ ! -x "$SDKMANAGER" ]]; then
+            SDKMANAGER="$(command -v sdkmanager || true)"
+          fi
+
+          if [[ -z "$SDKMANAGER" ]]; then
+            echo "ERROR: sdkmanager was not found."
+            exit 1
+          fi
+
+          echo "Installed Android SDK packages:"
+          "$SDKMANAGER" --list | sed -n '/Installed packages:/,/Available Packages:/p'
+
+          if [[ ! -d "$SDK_ROOT/platforms/android-35" ]]; then
+            echo "ERROR: Android platform 35 was not installed."
+            exit 1
+          fi
+
+          if [[ ! -d "$SDK_ROOT/build-tools/35.0.0" ]]; then
+            echo "ERROR: Android Build Tools 35.0.0 were not installed."
+            exit 1
+          fi
+
+          echo "Android SDK verification passed."
 
       - name: Verify project files
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
           test -f settings.gradle.kts
           test -f build.gradle.kts
@@ -79,10 +117,11 @@ jobs:
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
-          if [ ! -f gradlew ]; then
-            echo "ERROR: gradlew is missing. Generate and commit the Gradle wrapper first."
+          if [[ ! -f gradlew ]]; then
+            echo "ERROR: gradlew is missing."
+            echo "Generate and commit the Gradle wrapper first."
             exit 1
           fi
 
@@ -96,29 +135,39 @@ jobs:
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
-          set -euo pipefail
-          ./gradlew clean --stacktrace --no-daemon
+          set -Eeuo pipefail
+
+          chmod +x ./gradlew
+          ./gradlew clean \
+            --stacktrace \
+            --no-daemon
 
       - name: Build APK
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
-          set -euo pipefail
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          set -Eeuo pipefail
+
+          chmod +x ./gradlew
+          ./gradlew assembleDebug \
+            --stacktrace \
+            --no-daemon
 
       - name: Verify APK
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
           APK="$(find app/build/outputs/apk \
             -type f \
             -name '*.apk' \
-            | head -n 1)"
+            -print -quit)"
 
-          if [ -z "$APK" ]; then
+          if [[ -z "$APK" ]]; then
             echo "ERROR: APK was not generated."
+            echo "Files found inside app/build:"
+            find app/build -type f 2>/dev/null || true
             exit 1
           fi
 
