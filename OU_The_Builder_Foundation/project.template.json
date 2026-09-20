@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "OU The Builder",
+  "target": "android",
+  "screens": [],
+  "assets": [],
+  "navigation": [],
+  "build": {
+    "target": "android-apk",
+    "status": "not-built"
+  },
+  "cloud": {
+    "defaultProvider": null,
+    "syncEnabled": false
+  }
+}
