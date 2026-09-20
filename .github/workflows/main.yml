@@ -29,9 +29,26 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
+      - name: Install Android SDK packages
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-37"
+          sdkmanager "build-tools;37.0.0"
+
+      - name: Accept Android SDK licenses
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+
       - name: Verify project
         run: |
-          set -e
+          set -euo pipefail
 
           test -f gradlew
           test -f settings.gradle.kts
@@ -46,17 +63,17 @@ jobs:
 
       - name: Clean project
         run: |
-          set -e
-          ./gradlew clean --stacktrace
+          set -euo pipefail
+          ./gradlew clean --stacktrace --no-daemon
 
       - name: Build APK
         run: |
-          set -e
-          ./gradlew assembleDebug --stacktrace
+          set -euo pipefail
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Verify APK
         run: |
-          set -e
+          set -euo pipefail
 
           APK=$(find app/build/outputs/apk \
             -type f \
@@ -68,8 +85,10 @@ jobs:
             exit 1
           fi
 
-          echo "APK generated successfully:"
-          echo "$APK"
+          echo "================================"
+          echo "APK BUILD SUCCESSFUL"
+          echo "================================"
+          echo "APK: $APK"
           ls -lh "$APK"
 
       - name: Upload APK
