@@ -1,127 +1,16 @@
-name: Build OU The Builder
-
-on:
-  push:
-    branches:
-      - main
-      - master
-  workflow_dispatch:
-
-jobs:
-  build:
-    name: Verify and Build APK
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout project
-        uses: actions/checkout@v5
-
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Configure Android SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-
-          if [ ! -d "$SDK_ROOT" ]; then
-            echo "Android SDK was not found at: $SDK_ROOT"
-            exit 1
-          fi
-
-          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
-          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
-          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-
-          echo "Using Android SDK: $SDK_ROOT"
-
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          yes | sdkmanager --licenses >/dev/null || true
-
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      - name: Verify Android SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-          sdkmanager --list_installed
-
-      - name: Verify project files
-        working-directory: OU_The_Builder_Foundation
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          test -f settings.gradle.kts
-          test -f build.gradle.kts
-          test -f app/build.gradle.kts
-          test -d app/src
-
-          echo "Android project files found."
-
       - name: Set up Gradle
-        uses: gradle/gradle-build-action@v3
-        with:
-          gradle-version: '9.1'
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Clean project
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
           set -euo pipefail
-
-          gradle clean \
-            --stacktrace \
-            --no-daemon
+          ./gradlew clean --stacktrace --no-daemon
 
       - name: Build APK
         working-directory: OU_The_Builder_Foundation
         shell: bash
         run: |
           set -euo pipefail
-
-          gradle assembleDebug \
-            --stacktrace \
-            --no-daemon
-
-      - name: Verify APK
-        working-directory: OU_The_Builder_Foundation
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          APK="$(find app/build/outputs/apk \
-            -type f \
-            -name '*.apk' \
-            | head -n 1)"
-
-          if [ -z "$APK" ]; then
-            echo "ERROR: APK was not generated."
-            exit 1
-          fi
-
-          echo "APK build successful:"
-          ls -lh "$APK"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: OU-The-Builder-debug-apk
-          path: OU_The_Builder_Foundation/app/build/outputs/apk/**/*.apk
-          if-no-files-found: error
+          ./gradlew assembleDebug --stacktrace --no-daemon
