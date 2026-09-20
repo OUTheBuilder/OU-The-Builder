@@ -1,4 +1,4 @@
-name: Diagnose Android Project
+name: Inspect OU The Builder
 
 on:
   workflow_dispatch:
@@ -7,121 +7,63 @@ on:
       - main
 
 jobs:
-  diagnose:
+  inspect:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Full project diagnostic
+      - name: Inspect files
         shell: bash
         run: |
-          set +e
-
-          echo "=================================================="
-          echo "OU THE BUILDER - ANDROID PROJECT DIAGNOSTIC"
-          echo "=================================================="
-
-          echo
-          echo "===== 1. SYSTEM ====="
-          uname -a
-          echo
-          java -version
-          echo
-          git --version
-
-          echo
-          echo "===== 2. REPOSITORY ROOT ====="
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "===== ROOT ====="
           pwd
+          echo
+
+          echo "===== TOP LEVEL ====="
           ls -la
-
           echo
-          echo "===== 3. COMPLETE PROJECT TREE ====="
-          find "$GITHUB_WORKSPACE" -maxdepth 6 -print | sort
 
+          echo "===== ALL TRACKED FILES ====="
+          git ls-files
           echo
-          echo "===== 4. GRADLE WRAPPERS ====="
-          find "$GITHUB_WORKSPACE" \
-            -type f \
-            -name "gradlew" -o -name "gradlew.bat" \
-            -print
 
+          echo "===== GRADLE FILES ====="
+          git ls-files | grep -E '(^|/)(gradlew|gradlew.bat|build.gradle|build.gradle.kts|settings.gradle|settings.gradle.kts|gradle.properties|gradle-wrapper.properties)$' || true
           echo
-          echo "===== 5. GRADLE CONFIGURATION FILES ====="
-          find "$GITHUB_WORKSPACE" \
-            -type f \
-            \
-              -name "settings.gradle" \
-              -o -name "settings.gradle.kts" \
-              -o -name "build.gradle" \
-              -o -name "build.gradle.kts" \
-              -o -name "gradle.properties" \
-              -o -name "gradle-wrapper.properties" \
-            \
-            -print
 
+          echo "===== ACTUAL GRADLE FILES ON DISK ====="
+          find . -type f \( \
+            -name 'gradlew' -o \
+            -name 'gradlew.bat' -o \
+            -name 'build.gradle' -o \
+            -name 'build.gradle.kts' -o \
+            -name 'settings.gradle' -o \
+            -name 'settings.gradle.kts' -o \
+            -name 'gradle.properties' -o \
+            -name 'gradle-wrapper.properties' \
+          \) -print
           echo
-          echo "===== 6. ANDROID MANIFESTS ====="
-          find "$GITHUB_WORKSPACE" \
-            -type f \
-            -name "AndroidManifest.xml" \
-            -print
 
+          echo "===== ANDROID PROJECT ====="
+          find . -type f -name 'AndroidManifest.xml' -print
           echo
-          echo "===== 7. KOTLIN / JAVA SOURCE ====="
-          find "$GITHUB_WORKSPACE" \
-            -type f \
-            -name "*.kt" -o -name "*.java" \
-            -print | head -200
 
+          echo "===== FOUNDATION DIRECTORY ====="
+          if [ -d "./OU_The_Builder_Foundation" ]; then
+            ls -la "./OU_The_Builder_Foundation"
+          else
+            echo "OU_The_Builder_Foundation DOES NOT EXIST"
+          fi
           echo
-          echo "===== 8. ROOT SETTINGS FILE ====="
 
-          for FILE in \
-            "$GITHUB_WORKSPACE/settings.gradle" \
-            "$GITHUB_WORKSPACE/settings.gradle.kts"
-          do
-            if [ -f "$FILE" ]; then
-              echo "----- $FILE -----"
-              cat "$FILE"
-            fi
-          done
-
+          echo "===== APP DIRECTORY ====="
+          if [ -d "./OU_The_Builder_Foundation/app" ]; then
+            find "./OU_The_Builder_Foundation/app" -maxdepth 4 -print
+          else
+            echo "APP DIRECTORY DOES NOT EXIST"
+          fi
           echo
-          echo "===== 9. ALL BUILD GRADLE FILES ====="
 
-          while IFS= read -r FILE; do
-            echo
-            echo "----- $FILE -----"
-            cat "$FILE"
-          done < <(
-            find "$GITHUB_WORKSPACE" \
-              -type f \
-              -name "build.gradle" -o -name "build.gradle.kts" \
-              -print
-          )
-
-          echo
-          echo "===== 10. GRADLE PROPERTIES ====="
-
-          while IFS= read -r FILE; do
-            echo
-            echo "----- $FILE -----"
-            cat "$FILE"
-          done < <(
-            find "$GITHUB_WORKSPACE" \
-              -type f \
-              -name "gradle.properties" \
-              -print
-          )
-
-          echo
-          echo "===== 11. GRADLE WRAPPER PROPERTIES
+          echo "===== DONE ====="
