@@ -13,6 +13,27 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install Python-for-Android for local recipe validation
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'git+https://github.com/kivy/python-for-android.git@master'
+      - name: Verify local Python 3 recipe excludes obsolete CPython patch
+        run: |
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+          recipe_file = Path("OU_DJ_Studio/p4a-recipes/python3/__init__.py")
+          spec = importlib.util.spec_from_file_location("ou_dj_python3_recipe", recipe_file)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          patches = [str(patch) for patch in module.recipe.patches]
+          assert not any("reproducible-buildinfo.diff" in patch for patch in patches), patches
+          assert any("android-disable-grp-enumeration.patch" in patch for patch in patches), patches
+          print("PASS: obsolete reproducible-buildinfo patch excluded; Android grp patch retained.")
+          PY
       - name: Download CPython 3.12.8 source
         run: |
           mkdir -p /tmp/cpython/Modules
