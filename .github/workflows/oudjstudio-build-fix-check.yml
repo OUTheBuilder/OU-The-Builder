@@ -1,0 +1,43 @@
+name: OU DJ Studio Android packaging fix preflight
+
+on:
+  push:
+    paths:
+      - 'OU_DJ_Studio/buildozer.spec'
+      - 'OU_DJ_Studio/p4a-recipes/python3/**'
+      - '.github/workflows/oudjstudio-build-fix-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-python-android-fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Verify target architecture and local recipe configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Eq '^android\.archs = arm64-v8a$' OU_DJ_Studio/buildozer.spec
+          ! grep -Eq 'armeabi-v7a' OU_DJ_Studio/buildozer.spec
+          grep -Eq '^p4a\.local_recipes = p4a-recipes$' OU_DJ_Studio/buildozer.spec
+          test -s OU_DJ_Studio/p4a-recipes/python3/__init__.py
+          test -s OU_DJ_Studio/p4a-recipes/python3/android-disable-grp-enumeration.patch
+          echo "PASS: 32-bit ARM target removed; Android-specific Python recipe is configured."
+
+      - name: Verify CPython 3.12.8 patch applies cleanly
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 \
+            https://www.python.org/ftp/python/3.12.8/Python-3.12.8.tgz \
+            --output /tmp/Python-3.12.8.tgz
+          mkdir -p /tmp/cpython-check
+          tar -xzf /tmp/Python-3.12.8.tgz -C /tmp/cpython-check
+          cd /tmp/cpython-check/Python-3.12.8
+          patch --dry-run -p1 < "$GITHUB_WORKSPACE/OU_DJ_Studio/p4a-recipes/python3/android-disable-grp-enumeration.patch"
+          echo "PASS: Android grpmodule patch applies to CPython 3.12.8."
