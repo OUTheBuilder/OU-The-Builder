@@ -43,7 +43,9 @@ jobs:
           grep -Eq '^android\.archs = arm64-v8a$' buildozer.spec
           test -f p4a-recipes/python3/__init__.py
           test -f p4a-recipes/python3/android-disable-grp-enumeration.patch
-          echo 'Pinned Python 3.12.8 / NDK 25b / arm64-v8a configuration verified.'
+          test -f p4a-recipes/python3/patches/pyconfig_detection.patch
+          test -f p4a-recipes/python3/patches/reproducible-buildinfo.diff
+          echo 'Pinned Python 3.12.8 / NDK 25b / arm64-v8a configuration and Python patches verified.'
           cat buildozer.spec
 
       - name: Install pinned Buildozer toolchain
