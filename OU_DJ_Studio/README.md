@@ -24,3 +24,6 @@ This is an original application and does not include VirtualDJ code, branding, o
 
 ## Build status
 The first Android debug build is configured through the repository workflow at `.github/workflows/oudjstudio-build.yml`.
+
+
+Build dependency fix: the GitHub Actions workflow now installs `libltdl-dev` for the libffi Autotools step.
