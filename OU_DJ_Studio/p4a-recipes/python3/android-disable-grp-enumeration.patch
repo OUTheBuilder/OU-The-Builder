@@ -4,7 +4,7 @@
  grp_getgrall_impl(PyObject *module)
  /*[clinic end generated code: output=585dad35e2e763d7 input=d7df76c825c367df]*/
  {
-+#ifdef __ANDROID__
++#if defined(__ANDROID__) || defined(ANDROID)
 +    return PyList_New(0);
 +#else
      PyObject *d;
