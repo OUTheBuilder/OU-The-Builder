@@ -15,9 +15,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Download CPython 3.12.8 source
         run: |
-          curl -fsSL https://raw.githubusercontent.com/python/cpython/v3.12.8/Modules/grpmodule.c -o /tmp-grpmodule.c
           mkdir -p /tmp/cpython/Modules
-          mv /tmp-grpmodule.c /tmp/cpython/Modules/grpmodule.c
+          curl -fsSL https://raw.githubusercontent.com/python/cpython/v3.12.8/Modules/grpmodule.c -o /tmp/cpython/Modules/grpmodule.c
       - name: Verify Android grp compatibility patch
         working-directory: /tmp/cpython
         run: |
