@@ -27,7 +27,7 @@ jobs:
           from pathlib import Path
           source = Path("Modules/grpmodule.c").read_text()
           start = source.index("grp_getgrall_impl(PyObject *module)")
-          end = source.index("\\nstatic PyMethodDef grp_methods[]", start)
+          end = source.index("\nstatic PyMethodDef grp_methods[]", start)
           method = source[start:end]
           guard = "#if defined(__ANDROID__) || defined(ANDROID)"
           assert guard in method, "Android NDK macro guard is missing"
