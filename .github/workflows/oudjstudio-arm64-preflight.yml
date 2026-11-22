@@ -4,8 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/oudjstudio-arm64-preflight.yml'
-      - 'OU_DJ_Studio/buildozer.spec'
-      - 'OU_DJ_Studio/p4a-recipes/**'
+      - 'OU_DJ_Studio/**'
   workflow_dispatch:
 
 permissions:
