@@ -20,3 +20,7 @@ The GitHub Actions workflow builds a debug APK when files under this folder chan
 The waveform is a visual rhythm placeholder, not decoded track waveform data. Beat detection, BPM analysis, beat matching, true pitch/time-stretch, EQ, filters, effects, recording, headphone cue routing, stems, and MIDI/USB controller support are not implemented in this first build. Android audio backends and device audio routing vary, so test playback with your device and headphones.
 
 This is an original application and does not include VirtualDJ code, branding, or assets.
+
+
+## Build status
+The first Android debug build is configured through the repository workflow at `.github/workflows/oudjstudio-build.yml`.
