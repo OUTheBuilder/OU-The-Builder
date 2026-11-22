@@ -1,0 +1,37 @@
+name: OU DJ Studio Python Android Compatibility Check
+
+on:
+  push:
+    paths:
+      - 'OU_DJ_Studio/p4a-recipes/python3/**'
+      - 'OU_DJ_Studio/buildozer.spec'
+      - '.github/workflows/oudjstudio-python-compat-check.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-grp-patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download CPython 3.12.8 source
+        run: |
+          git clone --depth 1 --branch v3.12.8 https://github.com/python/cpython.git /tmp/cpython
+      - name: Verify Android grp compatibility patch
+        working-directory: /tmp/cpython
+        run: |
+          patch --dry-run -p1 < "$GITHUB_WORKSPACE/OU_DJ_Studio/p4a-recipes/python3/android-disable-grp-enumeration.patch"
+          patch -p1 < "$GITHUB_WORKSPACE/OU_DJ_Studio/p4a-recipes/python3/android-disable-grp-enumeration.patch"
+          python - <<'PY'
+          from pathlib import Path
+          source = Path("Modules/grpmodule.c").read_text()
+          start = source.index("grp_getgrall_impl(PyObject *module)")
+          end = source.index("\nstatic PyMethodDef grp_methods[]", start)
+          method = source[start:end]
+          android_branch = method.split("#else", 1)[0]
+          native_branch = method.split("#else", 1)[1]
+          assert "#ifdef __ANDROID__" in android_branch
+          assert "return PyList_New(0);" in android_branch
+          assert all(name not in android_branch for name in ("setgrent(", "getgrent(", "endgrent("))
+          assert all(name in native_branch for name in ("setgrent(", "getgrent(", "endgrent("))
+          print("PASS: Android builds skip unsupported group enumeration; non-Android behavior is unchanged.")
+          PY
