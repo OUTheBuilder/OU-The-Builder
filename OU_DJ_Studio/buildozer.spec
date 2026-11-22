@@ -17,6 +17,7 @@ android.allow_backup = True
 android.accept_sdk_license = True
 p4a.bootstrap = sdl2
 p4a.branch = master
+p4a.local_recipes = p4a-recipes
 [buildozer]
 log_level = 2
 warn_on_root = 1
