@@ -229,6 +229,14 @@ class Deck(BoxLayout):
 
 
 class DJStudio(App):
+    def on_start(self):
+        # Android 13+ uses READ_MEDIA_AUDIO; older versions use READ_EXTERNAL_STORAGE.
+        try:
+            from android.permissions import request_permissions, Permission
+            request_permissions([Permission.READ_MEDIA_AUDIO, Permission.READ_EXTERNAL_STORAGE])
+        except Exception:
+            pass
+
     def build(self):
         root = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(8))
         header = BoxLayout(size_hint_y=None, height=dp(48))
