@@ -65,7 +65,7 @@ jobs:
 
           "$SDKMANAGER" \
             "platform-tools" \
-            "platforms;android-37" \
+            "platforms;android-37.2" \
             "build-tools;36.0.0"
 
       - name: Verify Android SDK
@@ -88,8 +88,8 @@ jobs:
           echo "Installed Android SDK packages:"
           "$SDKMANAGER" --list | sed -n '/Installed packages:/,/Available Packages:/p'
 
-          if [[ ! -d "$SDK_ROOT/platforms/android-37" ]]; then
-            echo "ERROR: Android platform 37 was not installed."
+          if [[ ! -d "$SDK_ROOT/platforms/android-37.2" ]]; then
+            echo "ERROR: Android platform 37.2 was not installed."
             exit 1
           fi
 
