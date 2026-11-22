@@ -16,7 +16,7 @@ from kivy.uix.widget import Widget
 from kivy.graphics import Color, RoundedRectangle, Line
 
 Window.clearcolor = (0.035, 0.045, 0.075, 1)
-Window.size = (960, 540)
+# Screen dimensions are controlled by Android; do not force a desktop window size.
 
 
 def styled_button(text, callback=None, color=(0.12, 0.18, 0.28, 1), height=dp(42)):
