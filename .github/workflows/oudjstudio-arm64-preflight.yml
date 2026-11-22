@@ -29,16 +29,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android SDK and NDK
+        shell: bash
         run: |
-          sdkmanager --install "platforms;android-35" "ndk;25.1.8937393"
+          set -euo pipefail
           echo "ANDROIDSDK=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> "$GITHUB_ENV"
           echo "ANDROIDAPI=35" >> "$GITHUB_ENV"
           echo "ANDROIDMINAPI=24" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::Android SDK manager was not found on the GitHub runner."
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          "$SDKMANAGER" --install "platforms;android-35" "ndk;25.1.8937393"
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.1.8937393" >> "$GITHUB_ENV"
 
       - name: Install Python-for-Android
         run: |
