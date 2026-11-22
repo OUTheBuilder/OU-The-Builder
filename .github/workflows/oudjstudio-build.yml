@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip openjdk-17-jdk \
-            autoconf automake autopoint gettext libtool libtool-bin \
+            autoconf automake autopoint gettext libtool libtool-bin libltdl-dev \
             pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
             libtinfo6 cmake libffi-dev libssl-dev
           libtoolize --version
