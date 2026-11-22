@@ -21,9 +21,6 @@ The waveform is a visual rhythm placeholder, not decoded track waveform data. Be
 
 This is an original application and does not include VirtualDJ code, branding, or assets.
 
-
 ## Build status
-The first Android debug build is configured through the repository workflow at `.github/workflows/oudjstudio-build.yml`.
 
-
-Build dependency fix: the GitHub Actions workflow now installs `libltdl-dev` for the libffi Autotools step.
+The GitHub Actions workflow installs the Autotools, Libtool, and libltdl development dependencies required by the Android build environment.
