@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090e19"><title>OU DJ Studio — Web Preview</title>
+<style>
+:root{color-scheme:dark;--bg:#080d17;--panel:#111b2b;--panel2:#17243a;--line:#263a55;--cyan:#22dec5;--blue:#6688ff;--muted:#91a3bd;--text:#edf4ff;--red:#ff5572}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#172641 0,#080d17 55%);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{padding:15px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #23334b;background:#080d17cc;position:sticky;top:0;z-index:5;backdrop-filter:blur(12px)}
+.brand{font-weight:900;letter-spacing:2px;font-size:20px}.brand span{color:var(--cyan)}.tag{font-size:10px;color:var(--cyan);border:1px solid #1b766e;border-radius:30px;padding:5px 9px;letter-spacing:1px}
+main{max-width:1100px;margin:auto;padding:14px}.notice{border:1px solid #34506d;background:#102039;border-radius:12px;padding:10px 12px;color:#c5d7ee;font-size:12px;margin-bottom:12px}.notice b{color:var(--cyan)}
+.decks{display:grid;grid-template-columns:1fr 1fr;gap:12px}.deck{background:linear-gradient(145deg,#152238,#0e1726);border:1px solid var(--line);border-radius:16px;padding:13px;min-width:0;box-shadow:0 12px 30px #0004}
+.deckhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.deckname{font-size:19px;font-weight:900;letter-spacing:2px;color:var(--cyan)}.track{color:var(--muted);font-size:11px;max-width:58%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.disc{height:130px;width:130px;border-radius:50%;margin:8px auto 12px;background:repeating-radial-gradient(circle,#141d2b 0 4px,#26354a 5px 7px,#0b111d 8px 10px);border:5px solid #31415a;display:grid;place-items:center;box-shadow:0 0 0 5px #0a111d,0 0 25px #22dec533;position:relative}
+.disc:before{content:"";width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),#24405b);border:4px solid #0a111d}.disc.playing{animation:spin 3s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.wave{height:48px;width:100%;background:#0a1220;border:1px solid #253852;border-radius:8px;display:block;margin:8px 0}
+.time{display:flex;justify-content:space-between;color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}.seek{width:100%;accent-color:var(--cyan)}
+.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}.btn{border:1px solid #314760;border-radius:9px;background:#1a2a41;color:var(--text);padding:10px 5px;font-weight:750;font-size:11px;min-height:40px}.btn:active{transform:scale(.98);filter:brightness(1.3)}.btn.primary{background:#087e75;border-color:#19bbaa}.btn.stop{background:#572438;border-color:#984158}.btn.cue{background:#34295d;border-color:#594d91}
+.file{display:block;width:100%;font-size:11px;color:var(--muted);margin:6px 0}.volume-row{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11px}.volume-row input{flex:1;accent-color:var(--blue)}
+.pads{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.pad{background:#293653;border:1px solid #50658d;color:#dce7ff;border-radius:8px;padding:9px 2px;font-size:10px;font-weight:800}
+.mixer{margin-top:12px;padding:14px;background:linear-gradient(135deg,#17243a,#0f1929);border:1px solid var(--line);border-radius:16px}.mixhead{font-weight:800;letter-spacing:1.5px;margin-bottom:12px}.mixrow{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;gap:10px}.mixrow input{width:100%;accent-color:var(--cyan)}.master{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--muted);font-size:11px}.master input{flex:1;accent-color:var(--blue)}
+.status{text-align:center;color:var(--muted);font-size:11px;padding:15px 0 4px}
+@media(max-width:700px){header{padding:12px}.brand{font-size:17px}main{padding:9px}.decks{grid-template-columns:1fr}.deck{padding:11px}.disc{height:105px;width:105px}.controls .btn{padding:9px 2px;font-size:10px}.notice{font-size:11px}}
+</style></head>
+<body>
+<header><div class="brand">OU <span>DJ</span> STUDIO</div><div class="tag">WEB PREVIEW · TEST BUILD</div></header>
+<main>
+<div class="notice"><b>Preview mode:</b> Load audio files stored on this device. This browser prototype tests the layout and basic playback controls; it does not yet replace the native Android app.</div>
+<div class="decks" id="decks"></div>
+<section class="mixer"><div class="mixhead">MASTER MIXER</div>
+<div class="mixrow"><b style="color:var(--cyan)">A</b><input id="cross" type="range" min="0" max="1" step=".01" value=".5"><b style="color:var(--blue)">B</b></div>
+<div class="master"><span>MASTER OUTPUT</span><input id="master" type="range" min="0" max="1" step=".01" value=".9"><strong id="masterVal">90%</strong></div>
+</section><div class="status" id="status">Ready · Choose a track on Deck A or Deck B</div>
+</main>
+<script>
+const $=s=>document.querySelector(s);let audioCtx=null,masterGain=null;const decks=[];
+function ensureAudio(){if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();masterGain=audioCtx.createGain();masterGain.connect(audioCtx.destination);masterGain.gain.value=+$ ('#master').value;}if(audioCtx.state==='suspended')audioCtx.resume();}
+function fmt(t){if(!Number.isFinite(t))return'0:00';return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')}
+function makeDeck(id){
+ const d={id,audio:new Audio(),url:null,cues:[null,null,null,null],loopStart:null,loopEnd:null,loopOn:false,gain:null,source:null};d.audio.preload='metadata';d.audio.crossOrigin='anonymous';
+ const el=document.createElement('section');el.className='deck';el.innerHTML=`
+ <div class="deckhead"><div class="deckname">DECK ${id}</div><div class="track" id="name${id}">No track loaded</div></div>
+ <div class="disc" id="disc${id}"></div>
+ <canvas class="wave" id="wave${id}" width="600" height="90"></canvas>
+ <div class="time"><span id="cur${id}">0:00</span><span id="dur${id}">0:00</span></div>
+ <input class="seek" id="seek${id}" type="range" min="0" max="1000" value="0">
+ <input class="file" id="file${id}" type="file" accept="audio/*">
+ <div class="controls">
+ <button class="btn primary" id="play${id}">▶ PLAY</button><button class="btn cue" id="cue${id}">CUE</button><button class="btn stop" id="stop${id}">■ STOP</button><button class="btn" id="loop${id}">LOOP 4s</button>
+ </div>
+ <div class="volume-row"><span>DECK VOL</span><input id="vol${id}" type="range" min="0" max="1" step=".01" value="1"><b id="volv${id}">100%</b></div>
+ <div class="pads">${[1,2,3,4].map(n=>`<button class="pad" id="pad${id}${n}">HOT CUE ${n}</button>`).join('')}</div>
+ <div class="controls"><button class="btn" id="setloop${id}">SET LOOP IN</button><button class="btn" id="exitloop${id}">EXIT LOOP</button><button class="btn" id="back${id}">-5 SEC</button><button class="btn" id="fwd${id}">+5 SEC</button></div>`;
+ $('#decks').append(el);d.el=el;
+ d.audio.addEventListener('loadedmetadata',()=>{$('#dur'+id).textContent=fmt(d.audio.duration);drawWave(id)});
+ d.audio.addEventListener('timeupdate',()=>{const a=d.audio;$('#cur'+id).textContent=fmt(a.currentTime);$('#seek'+id).value=a.duration?a.currentTime/a.duration*1000:0;if(d.loopOn&&d.loopEnd!==null&&a.currentTime>=d.loopEnd){a.currentTime=d.loopStart}});
+ d.audio.addEventListener('play',()=>$('#disc'+id).classList.add('playing'));d.audio.addEventListener('pause',()=>$('#disc'+id).classList.remove('playing'));
+ $('#file'+id).onchange=e=>{const f=e.target.files[0];if(!f)return;if(d.url)URL.revokeObjectURL(d.url);d.url=URL.createObjectURL(f);d.audio.src=d.url;d.audio.load();$('#name'+id).textContent=f.name;$('#status').textContent='Loaded '+f.name+' on Deck '+id};
+ $('#play'+id).onclick=async()=>{ensureAudio();if(!d.audio.src){$('#file'+id).click();return}if(d.audio.paused){try{await d.audio.play();$('#play'+id).textContent='❚❚ PAUSE'}catch(e){$('#status').textContent='Playback blocked: '+e.message}}else{d.audio.pause();$('#play'+id).textContent='▶ PLAY'}};
+ d.audio.addEventListener('pause',()=>$('#play'+id).textContent='▶ PLAY');d.audio.addEventListener('play',()=>$('#play'+id).textContent='❚❚ PAUSE');
+ $('#stop'+id).onclick=()=>{d.audio.pause();d.audio.currentTime=0};
+ $('#cue'+id).onclick=()=>{if(!d.audio.src)return;if(d.audio.paused){d.audio.currentTime=d.cuePoint||0;d.audio.play().catch(()=>{})}else{d.cuePoint=d.audio.currentTime;d.audio.pause();d.audio.currentTime=d.cuePoint}};
+ $('#seek'+id).oninput=e=>{if(d.audio.duration)d.audio.currentTime=e.target.value/1000*d.audio.duration};
+ $('#vol'+id).oninput=e=>{d.vol=+e.target.value;$('#volv'+id).textContent=Math.round(d.vol*100)+'%';applyMix()};
+ d.vol=1;$('#setloop'+id).onclick=()=>{d.loopStart=d.audio.currentTime;$('#status').textContent='Loop start set on Deck '+id};
+ $('#loop'+id).onclick=()=>{if(!d.audio.duration)return;d.loopStart=d.audio.currentTime;d.loopEnd=Math.min(d.loopStart+4,d.audio.duration);d.loopOn=true;$('#status').textContent='Four-second loop enabled on Deck '+id};
+ $('#exitloop'+id).onclick=()=>{d.loopOn=false;$('#status').textContent='Loop disabled on Deck '+id};
+ $('#back'+id).onclick=()=>d.audio.currentTime=Math.max(0,d.audio.currentTime-5);
+ $('#fwd'+id).onclick=()=>d.audio.currentTime=Math.min(d.audio.duration||0,d.audio.currentTime+5);
+ for(let n=1;n<=4;n++)$('#pad'+id+n).onclick=()=>{if(!d.audio.src)return;if(d.cues[n-1]===null){d.cues[n-1]=d.audio.currentTime;$('#pad'+id+n).style.borderColor='var(--cyan)';$('#status').textContent='Hot cue '+n+' saved on Deck '+id}else{d.audio.currentTime=d.cues[n-1];d.audio.play().catch(()=>{})}};
+ decks.push(d);return d
+}
+function drawWave(id){const c=$('#wave'+id),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);for(let i=0;i<120;i++){const h=8+Math.abs(Math.sin(i*.31)*Math.cos(i*.09))*66;x.fillStyle=i%3?'#1c8e91':'#42d9c3';x.fillRect(i*5,c.height/2-h/2,3,h)}}
+function applyMix(){if(!audioCtx)return;const cross=+$ ('#cross').value,master=+$ ('#master').value;decks.forEach((d,i)=>{const pan=i===0?Math.cos(cross*Math.PI/2):Math.sin(cross*Math.PI/2);d.audio.volume=Math.max(0,Math.min(1,d.vol*pan*master))})}
+makeDeck('A');makeDeck('B');$('#cross').oninput=applyMix;$('#master').oninput=e=>{$('#masterVal').textContent=Math.round(e.target.value*100)+'%';applyMix()};drawWave('A');drawWave('B');
+window.addEventListener('beforeunload',()=>decks.forEach(d=>{d.audio.pause();if(d.url)URL.revokeObjectURL(d.url)}));
+</script></body></html>
